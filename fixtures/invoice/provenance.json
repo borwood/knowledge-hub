@@ -1,0 +1,9 @@
+{
+  "cloud_calls": false,
+  "confidence_kind": "invented_not_calibrated",
+  "document_sha256": "a1e631f48b595f2a436b348dbd49e0aea6f7391a48440ccd64b440a204c9ecbf",
+  "generator": "python -m backend.fixture generate",
+  "notice": "Invented Textract-shaped blocks; no AWS Textract call was made.",
+  "schema_version": "1.0",
+  "source_kind": "synthetic"
+}

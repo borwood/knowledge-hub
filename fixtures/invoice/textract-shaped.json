@@ -1,0 +1,88 @@
+{
+  "Blocks": [
+    {
+      "BlockType": "LINE",
+      "Confidence": 99.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Height": 0.022727272727272728,
+          "Left": 0.08169934640522876,
+          "Top": 0.09848484848484848,
+          "Width": 0.6535947712418301
+        }
+      },
+      "Id": "line-1",
+      "Page": 1,
+      "Text": "Invoice number: SYN-2026-001"
+    },
+    {
+      "BlockType": "LINE",
+      "Confidence": 99.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Height": 0.022727272727272728,
+          "Left": 0.08169934640522876,
+          "Top": 0.12878787878787878,
+          "Width": 0.6535947712418301
+        }
+      },
+      "Id": "line-2",
+      "Page": 1,
+      "Text": "Vendor: Juniper Example Supplies"
+    },
+    {
+      "BlockType": "LINE",
+      "Confidence": 99.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Height": 0.022727272727272728,
+          "Left": 0.08169934640522876,
+          "Top": 0.1590909090909091,
+          "Width": 0.6535947712418301
+        }
+      },
+      "Id": "line-3",
+      "Page": 1,
+      "Text": "Date: 2026-10-01"
+    },
+    {
+      "BlockType": "LINE",
+      "Confidence": 99.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Height": 0.022727272727272728,
+          "Left": 0.08169934640522876,
+          "Top": 0.1893939393939394,
+          "Width": 0.6535947712418301
+        }
+      },
+      "Id": "line-4",
+      "Page": 1,
+      "Text": "Currency: USD"
+    },
+    {
+      "BlockType": "LINE",
+      "Confidence": 99.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Height": 0.022727272727272728,
+          "Left": 0.08169934640522876,
+          "Top": 0.2196969696969697,
+          "Width": 0.6535947712418301
+        }
+      },
+      "Id": "line-5",
+      "Page": 1,
+      "Text": "Total: 125.00"
+    }
+  ],
+  "DocumentMetadata": {
+    "Pages": 1
+  },
+  "confidence_kind": "invented_not_calibrated",
+  "document_sha256": "a1e631f48b595f2a436b348dbd49e0aea6f7391a48440ccd64b440a204c9ecbf",
+  "method": "synthetic_fixture_v1",
+  "notice": "Invented Textract-shaped blocks; no AWS Textract call was made.",
+  "schema_version": "1.0",
+  "source_kind": "synthetic"
+}

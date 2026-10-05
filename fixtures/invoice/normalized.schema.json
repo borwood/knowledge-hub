@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Synthetic normalized invoice v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "source_kind", "document_sha256", "fields"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "source_kind": {"const": "synthetic"},
+    "document_sha256": {"$ref": "#/$defs/hash"},
+    "fields": {"type": "array", "minItems": 5, "maxItems": 5, "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "value", "page", "document_sha256", "evidence", "method", "confidence", "confidence_kind"],
+      "properties": {
+        "name": {"enum": ["invoice_number", "vendor", "date", "currency", "total"]},
+        "value": {"type": "string", "minLength": 1},
+        "page": {"type": "integer", "minimum": 1, "maximum": 10},
+        "document_sha256": {"$ref": "#/$defs/hash"},
+        "method": {"const": "synthetic_fixture_v1"},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "confidence_kind": {"const": "invented_not_calibrated"},
+        "evidence": {
+          "type": "object", "additionalProperties": false,
+          "required": ["block_id", "bounding_box"],
+          "properties": {
+            "block_id": {"type": "string", "pattern": "^line-[1-5]$"},
+            "bounding_box": {"$ref": "#/$defs/box"}
+          }
+        }
+      }
+    }}
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "box": {
+      "type": "object", "additionalProperties": false,
+      "required": ["Left", "Top", "Width", "Height"],
+      "properties": {
+        "Left": {"type": "number", "minimum": 0, "maximum": 1},
+        "Top": {"type": "number", "minimum": 0, "maximum": 1},
+        "Width": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "Height": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+      }
+    }
+  }
+}

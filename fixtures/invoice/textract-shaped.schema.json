@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Synthetic Textract-shaped blocks v1 (not an AWS response)",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "source_kind", "document_sha256", "confidence_kind", "method", "notice", "DocumentMetadata", "Blocks"],
+  "properties": {
+    "schema_version": {"const": "1.0"}, "source_kind": {"const": "synthetic"},
+    "document_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "confidence_kind": {"const": "invented_not_calibrated"},
+    "method": {"const": "synthetic_fixture_v1"},
+    "notice": {"const": "Invented Textract-shaped blocks; no AWS Textract call was made."},
+    "DocumentMetadata": {"type": "object", "required": ["Pages"], "additionalProperties": false, "properties": {"Pages": {"const": 1}}},
+    "Blocks": {"type": "array", "minItems": 5, "maxItems": 5, "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["Id", "BlockType", "Page", "Text", "Confidence", "Geometry"],
+      "properties": {
+        "Id": {"type": "string", "pattern": "^line-[1-5]$"},
+        "BlockType": {"const": "LINE"}, "Page": {"const": 1},
+        "Text": {"type": "string", "minLength": 1},
+        "Confidence": {"type": "number", "minimum": 0, "maximum": 100},
+        "Geometry": {"type": "object", "additionalProperties": false, "required": ["BoundingBox"], "properties": {
+          "BoundingBox": {
+            "type": "object", "additionalProperties": false, "required": ["Left", "Top", "Width", "Height"],
+            "properties": {
+              "Left": {"type": "number", "minimum": 0, "maximum": 1},
+              "Top": {"type": "number", "minimum": 0, "maximum": 1},
+              "Width": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+              "Height": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+            }
+          }
+        }}
+      }
+    }}
+  }
+}

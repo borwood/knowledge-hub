@@ -1,0 +1,34 @@
+{
+  "realm": "hub",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "accessTokenLifespan": 1800,
+  "ssoSessionIdleTimeout": 28800,
+  "ssoSessionMaxLifespan": 28800,
+  "clients": [{
+    "clientId": "knowledge-hub",
+    "enabled": true,
+    "publicClient": false,
+    "secret": "${OIDC_CLIENT_SECRET}",
+    "standardFlowEnabled": true,
+    "directAccessGrantsEnabled": false,
+    "serviceAccountsEnabled": false,
+    "redirectUris": ["http://127.0.0.1:3000/api/auth/callback"],
+    "webOrigins": ["http://127.0.0.1:3000"],
+    "attributes": {
+      "pkce.code.challenge.method": "S256",
+      "post.logout.redirect.uris": "http://127.0.0.1:3000/"
+    }
+  }],
+  "users": [
+    {"username": "alice", "enabled": true, "emailVerified": true,
+     "firstName": "Alice", "lastName": "Demo", "email": "alice@example.invalid",
+     "credentials": [{"type": "password", "value": "${DEMO_ALICE_PASSWORD}", "temporary": false}]},
+    {"username": "bob", "enabled": true, "emailVerified": true,
+     "firstName": "Bob", "lastName": "Demo", "email": "bob@example.invalid",
+     "credentials": [{"type": "password", "value": "${DEMO_BOB_PASSWORD}", "temporary": false}]}
+  ]
+}

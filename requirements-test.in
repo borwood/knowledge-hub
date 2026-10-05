@@ -1,0 +1,5 @@
+-r backend/requirements.in
+jsonschema==4.26.0
+pytest==9.1.1
+playwright==1.63.0
+httpx==0.28.1
