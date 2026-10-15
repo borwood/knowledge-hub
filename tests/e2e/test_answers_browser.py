@@ -11,13 +11,16 @@ def test_answers_and_source_canvas(runtime):
         page.get_by_text('Service status & developer details', exact=True).click()
         expect(page.locator('footer')).to_contain_text('Ask a supported invoice question')
         expect(page.get_by_role('link',name='GraphQL explorer')).to_have_count(0)
+        # Developer API links moved into the inspectable service explanation.
+        page.get_by_role('button',name='Enable demo inspection',exact=True).click()
+        page.get_by_role('heading',name='Service status',exact=True).scroll_into_view_if_needed()
+        page.get_by_role('button',name='Pin Service readiness',exact=True).click()
         page.get_by_role('link',name='GraphQL health',exact=True).click()
         assert page.locator('body').inner_text().find('objectStore') >= 0
         assert 'INVALID_REQUEST' not in page.locator('body').inner_text()
         sign_in(page, 'alice')
-        page.get_by_label('PDF document', exact=True).set_input_files(ROOT / 'fixtures/invoice/invoice.pdf')
         with page.expect_response(lambda r: r.url.endswith('/api/documents') and r.request.method == 'POST') as response:
-            page.get_by_role('button', name='Upload PDF', exact=True).click()
+            page.get_by_role('button', name='Upload demo invoice', exact=True).click()
         doc = response.value.json()
         page.get_by_role('button', name='Open uploaded document', exact=True).click()
         page.get_by_role('button', name='Ask question', exact=True).click()

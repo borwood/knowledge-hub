@@ -9,13 +9,13 @@ h3 { font-size:18px; font-weight:600; margin-bottom:16px; }
 h4 { font-size:16px; font-weight:600; margin-bottom:12px; }
 p { margin:8px 0; }
 a { color:var(--accent); text-underline-offset:4px; }
-button,input,select { font:inherit; color:var(--text); }
-button,select,input[type=search] { min-height:42px; border:1px solid var(--border); border-radius:7px; background:var(--raised); padding:9px 14px; }
-button { cursor:pointer; white-space:normal; font-weight:550; transition:background-color 150ms,border-color 150ms; }
-button:hover { background:#2b383e; border-color:var(--muted); }
-button.primary { color:var(--ink); background:var(--accent); border-color:var(--accent); }
-button.primary:hover { background:#b2eee5; }
-button:disabled,button[aria-disabled=true] { color:#bac4c8; background:#303a3e; border-color:var(--border); cursor:default; }
+main :is(button,input,select) { font:inherit; color:var(--text); }
+main :is(button,select,input[type=search]) { min-height:42px; border:1px solid var(--border); border-radius:7px; background:var(--raised); padding:9px 14px; }
+main button { cursor:pointer; white-space:normal; font-weight:550; transition:background-color 150ms,border-color 150ms; }
+main button:hover { background:#2b383e; border-color:var(--muted); }
+main button.primary { color:var(--ink); background:var(--accent); border-color:var(--accent); }
+main button.primary:hover { background:#b2eee5; }
+main button:disabled,main button[aria-disabled=true] { color:#bac4c8; background:#303a3e; border-color:var(--border); cursor:default; }
 :focus-visible { outline:3px solid var(--accent); outline-offset:4px; }
 input[type=search],select { width:100%; display:block; }
 input::placeholder { color:var(--muted); opacity:1; }
@@ -118,6 +118,10 @@ footer { font-size:12px; max-width:680px; padding-bottom:12px; }
 a.sign-in { display:inline-block; min-height:44px; padding:10px 16px; margin:18px 0 8px; border-radius:7px; background:var(--accent); color:var(--ink); text-decoration:none; font-weight:600; }
 a.sign-in:hover { background:#b2eee5; }
 .welcome-panel .muted { font-size:12px; }
+.demo-credentials { min-width:0; }
+.demo-credentials dl { display:grid; grid-template-columns:80px minmax(0,1fr); gap:6px 12px; }
+.demo-credentials dt { color:var(--muted); }
+.demo-credentials dd { margin:0; overflow-wrap:anywhere; }
 .upload-disclosure { margin:18px 0 24px; }
 .upload-disclosure>summary { font-size:13px; }
 .upload-disclosure .upload-panel { margin:8px 0 0; }
@@ -125,3 +129,20 @@ a.sign-in:hover { background:#b2eee5; }
 .source-viewport .pdf-page { margin:0; }
 @media (max-width:760px) { .source-viewport { max-height:360px; } }
 [role=alert].success-notice { color:#a0e1c6; background:#18382f; border-color:#4f947c; }
+.demo-entry { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:12px; max-width:260px; }
+.hub-demo { --demoable-react-demo-surface:#181e21; --demoable-react-app-surface:#101416; --demoable-react-app-radius:12px; }
+/* Reserve a badge gutter in demo mode; the ordinary app keeps its original spacing. */
+.hub-demo :is(.upload-disclosure,.upload-panel form,.question-panel,.source-panel,[aria-labelledby=collection-heading],[aria-labelledby=connection-title]) { padding-top:34px; }
+.hub-demo a.sign-in { padding-left:36px; }
+.hub-demo .demoable-react-orientation { color:var(--text); }
+.hub-demo .demoable-react-events { background:var(--surface); color:var(--text); border-color:var(--demoable-react-demo-surface); }
+.hub-demo :is(.demoable-react-events-header,.demoable-react-event) { border-color:var(--line); }
+.hub-demo :is(.demoable-react-event-empty,.demoable-react-event-state) { color:var(--muted); }
+.hub-demo .demoable-react-event-state[data-state=succeeded] { color:#a0e1c6; }
+.hub-demo .demoable-react-event-state[data-state=failed] { color:var(--error); }
+.hub-demo :is(.demoable-react-events button,.demoable-react-gear) { color:var(--text); background:var(--raised); border-color:var(--border); }
+.demoable-react-layer { --demoable-react-accent:#8be0d2; --demoable-react-surface-rgb:24 30 33; --demoable-react-ink:#edf2f3; }
+.demoable-react-layer :is(.demoable-react-context-header,.demoable-react-context-body,.demoable-react-settings) { color:rgb(237 242 243 / var(--demoable-react-text-opacity)); }
+.demoable-react-layer :is(.demoable-react-pin,.demoable-react-close) { color:#edf2f3; background:#20282c; }
+.demoable-react-layer :is(button,input,a):focus-visible,.hub-demo :is(.demoable-react-events,.demoable-react-orientation) :is(button,a,input,[tabindex]):focus-visible { outline-color:var(--accent); }
+@media (max-width:760px) { .app-header { flex-wrap:wrap; } .demo-entry { justify-content:flex-start; max-width:100%; } }

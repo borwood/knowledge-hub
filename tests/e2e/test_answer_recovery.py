@@ -5,11 +5,10 @@ from test_ingestion_browser import sign_in, ROOT
 
 
 def upload_select(page):
-    if not page.get_by_label('PDF document', exact=True).is_visible():
-        page.get_by_text('Upload a PDF', exact=True).click()
-    page.get_by_label('PDF document', exact=True).set_input_files(ROOT / 'fixtures/invoice/invoice.pdf')
+    if not page.get_by_role('button', name='Upload demo invoice', exact=True).is_visible():
+        page.get_by_text('Upload a demo invoice', exact=True).click()
     with page.expect_response(lambda r:r.url.endswith('/api/documents') and r.request.method=='POST') as response:
-        page.get_by_role('button',name='Upload PDF',exact=True).click()
+        page.get_by_role('button',name='Upload demo invoice',exact=True).click()
     document=response.value.json()['id']
     page.get_by_role('button',name='Open uploaded document',exact=True).click()
     expect(page.get_by_role('button',name='Ask question',exact=True)).to_be_visible()

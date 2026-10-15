@@ -60,6 +60,8 @@ services:
     build: ./frontend
     environment:
       API_URL: http://api:8000
+      DEMO_ALICE_PASSWORD: ${DEMO_ALICE_PASSWORD:?Run setup_local.py}
+      DEMO_BOB_PASSWORD: ${DEMO_BOB_PASSWORD:?Run setup_local.py}
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:

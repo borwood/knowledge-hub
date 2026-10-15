@@ -1,11 +1,19 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Questions from './questions';
+import { useInspectable } from '@borwood/demoable-react';
+import { explanations } from './demo-context';
 
 export type DocumentRecord = { id: string; filename: string; state: string; error_code: string | null; created_at: string; byte_length: number };
 type Collection = { documents: DocumentRecord[]; total: number; page: number; total_pages: number };
 type Position = { q: string; state: string; page: number; selected: string | null; scroll: number; opener: string | null };
 const newest: Position = { q: '', state: '', page: 1, selected: null, scroll: 0, opener: null };
+// DemoLayout uses an app scroll region while active; the ordinary app uses the window.
+function scrollPosition() { return document.querySelector('.hub-demo-app')?.scrollTop ?? window.scrollY; }
+function restoreScroll(top: number) {
+  const app = document.querySelector('.hub-demo-app');
+  if (app) app.scrollTo(0, top); else window.scrollTo(0, top);
+}
 
 export function Metadata({ item }: { item: DocumentRecord }) {
   const bytes = `${item.byte_length.toLocaleString('en-US')} bytes`;
@@ -22,6 +30,7 @@ export function Metadata({ item }: { item: DocumentRecord }) {
 }
 
 export default function Discovery({ csrf, onExpired, uploaded, revision, onInquiryChange }: { csrf: string; onExpired: () => void; uploaded: DocumentRecord | null; revision: number; onInquiryChange: (active: boolean) => void }) {
+  const context = useInspectable<HTMLElement>({label: 'Private document collection', context: explanations.collection});
   const [position, setPosition] = useState<Position>(newest);
   useEffect(() => { onInquiryChange(Boolean(position.selected)); }, [position.selected, onInquiryChange]);
   const [draft, setDraft] = useState('');
@@ -56,12 +65,12 @@ export default function Discovery({ csrf, onExpired, uploaded, revision, onInqui
   function open(id: string, opener: string | null) {
     if (current.current.selected) {
       const next = { ...current.current, selected: id };
-      remember(next); show(next); window.scrollTo(0, 0); return;
+      remember(next); show(next); restoreScroll(0); return;
     }
-    const back = { ...current.current, scroll: window.scrollY, opener };
+    const back = { ...current.current, scroll: scrollPosition(), opener };
     remember(back);
     const next = { ...back, selected: id };
-    remember(next, true); show(next); window.scrollTo(0, 0);
+    remember(next, true); show(next); restoreScroll(0);
   }
   useEffect(() => {
     const h = history.current;
@@ -108,13 +117,17 @@ export default function Discovery({ csrf, onExpired, uploaded, revision, onInqui
     })();
     return () => { abort.abort(); generation.current++; };
   }, [position, revision, retry, onExpired]);
+  // Focus the newly opened inquiry once, before its asynchronous detail arrives.
+  // A late response must not steal focus from a control the user has already reached.
   useEffect(() => {
-    if (loading) return;
     if (position.selected) inquiry.current?.focus({ preventScroll: true });
-    else if (restore.current) {
+  }, [position.selected]);
+  useEffect(() => {
+    if (loading || position.selected) return;
+    if (restore.current) {
       const opener = position.opener ? document.getElementById(position.opener) : null;
       (opener || heading.current)?.focus({ preventScroll: true });
-      window.scrollTo(0, position.scroll); restore.current = false;
+      restoreScroll(position.scroll); restore.current = false;
     }
   }, [loading, position]);
 
@@ -127,7 +140,7 @@ export default function Discovery({ csrf, onExpired, uploaded, revision, onInqui
       {selected && <><Metadata item={selected} />
         {selected.state !== 'ready' && <p>This document is {selected.state}{selected.error_code ? ` (${selected.error_code})` : ''}. Questions require a ready document.</p>}
         <Questions key={selected.id} document={selected} csrf={csrf} onExpired={onExpired} /></>}
-    </section> : <section aria-labelledby="collection-heading">
+    </section> : <section ref={context.ref} aria-labelledby="collection-heading">
       <h3 id="collection-heading" ref={heading} tabIndex={-1}>Document collection</h3>
       <form className="collection-filters" onSubmit={event => { event.preventDefault(); change({ ...current.current, q: draft.trim(), page: 1, scroll: 0 }); }}>
         <div className="search-field"><label htmlFor="document-search">Search documents</label>
@@ -142,7 +155,7 @@ export default function Discovery({ csrf, onExpired, uploaded, revision, onInqui
         <div className="collection-pagination"><p role="status">{collection.total} results · Page {collection.page} of {collection.total_pages}</p>
         <nav aria-label="Collection pages"><button disabled={collection.page <= 1} onClick={() => change({ ...current.current, page: collection.page - 1 })}>Previous page</button>{' '}
           <button disabled={collection.page >= collection.total_pages} onClick={() => change({ ...current.current, page: collection.page + 1 })}>Next page</button></nav></div>
-        {collection.total === 0 ? <p>{position.q || position.state ? 'No matching documents. Try another search or state.' : 'No documents yet. Upload a PDF to get started.'}</p> :
+        {collection.total === 0 ? <p>{position.q || position.state ? 'No matching documents. Try another search or state.' : 'No documents yet. Upload the demo invoice to get started.'}</p> :
           <ul aria-label="Documents, newest first">{collection.documents.map(item => <li key={item.id}>
             <Metadata item={item} /><button id={'open-' + item.id} aria-label={'Open document ' + item.id} onClick={() => open(item.id, 'open-' + item.id)}>Open document</button>
           </li>)}</ul>}

@@ -1,6 +1,6 @@
 # Knowledge Hub
 
-Functional demo. A document workspace for asking precise invoice questions and checking the evidence behind every answer. Upload a PDF, find it in your collection, and follow a citation to the highlighted region on the original page.
+Functional demo. A document workspace for asking precise invoice questions and checking the evidence behind every answer. Upload the supplied demo invoice, find it in your collection, and follow a citation to the highlighted region on the original page.
 
 Deterministic synthetic extraction makes the demo reproducible and exposes the complete path from authenticated upload to inspectable evidence.
 
@@ -24,6 +24,7 @@ Deterministic synthetic extraction makes the demo reproducible and exposes the c
 | --- | --- |
 | Interface | Next.js 16, React 19, TypeScript, plain CSS |
 | Source viewer | PDF.js canvas rendering |
+| Demo context and event layer | @borwood/demoable-react 0.1.0 |
 | API | Python 3.13, FastAPI, Strawberry GraphQL |
 | Identity | Keycloak, OIDC authorization code flow |
 | Persistence | SQLite metadata/provenance, SeaweedFS S3-compatible object storage |
@@ -59,17 +60,27 @@ docker compose up -d --build --wait --wait-timeout 120
 
 Open **http://127.0.0.1:3000**. Use `127.0.0.1` consistently for the browser and identity-provider redirects.
 
-Setup creates an ignored `.env` with random local credentials, preserving any existing values. Read `DEMO_ALICE_PASSWORD` and `DEMO_BOB_PASSWORD` there and sign in as `alice` or `bob`. Keep `.env` private; [`.env.example`](.env.example) documents its keys. Existing identity/storage volumes keep their credentials—editing `.env` alone does not rotate them. The realm imports only on first startup.
+Setup creates an ignored `.env` with random local credentials, preserving any existing values. Enable demo inspection, then hover **Sign in with Keycloak** to reveal the configured **demo-only Alice and Bob usernames/passwords** in its inspection context. Pin the context with its **?** control to select or copy a password; the pin also supports keyboard and touch. Credentials and demo sign-in instructions appear only in the demo layer, and are fetched only when that context opens. These two intended local demo passwords are supplied at runtime through a no-store response; other secrets are not displayed. Keep `.env` private; [`.env.example`](.env.example) documents its keys. Existing identity/storage volumes keep their credentials—editing `.env` alone does not rotate them. The realm imports only on first startup.
 
 ### Try the workflow
 
-1. Sign in as Alice and upload [`fixtures/invoice/invoice.pdf`](fixtures/invoice/invoice.pdf).
+1. Enable demo inspection and hover or pin the login component to find Alice's credentials. Sign in with Keycloak, then choose **Upload demo invoice**. The app supplies `invoice.pdf` automatically; no local file selection is needed.
 2. Choose **Open uploaded document**, or find it in **Document collection** and choose **Open document**.
 3. Ask for the invoice total and currency, or the vendor. Choose an evidence link to inspect the highlighted original page; expand **Extraction & provenance** for the underlying identifiers and coordinates.
 4. Use **Back to documents** to restore your search, page, scroll position and focus. A full refresh starts a new collection view; stored uploads remain.
 5. Sign out, confirm Keycloak logout, then sign in as Bob. Alice's uploads are absent. Uploading the same file creates Bob's own independent document.
 
-Accepted input is an unencrypted PDF, at most **5 MiB and 10 pages**. Only the exact supplied sample supports extraction. A different valid PDF is retained with a failed extraction (`UNKNOWN_FIXTURE_DOCUMENT`); the app does not invent facts for it. All sample names, values and confidence scores are synthetic, and confidence is not answer certainty. See the [fixture contract](docs/fixture-contract.md).
+The button fetches a public copy of [`fixtures/invoice/invoice.pdf`](fixtures/invoice/invoice.pdf), then sends its exact bytes through the authenticated multipart upload API. Each completed click creates a genuine owner-scoped upload. An integration hash check guards the public asset against fixture drift. If fetching the sample fails, nothing is submitted and the action can be retried.
+
+The API still accepts an unencrypted PDF, at most **5 MiB and 10 pages**. Only the exact supplied sample supports extraction. A different valid PDF is retained with a failed extraction (`UNKNOWN_FIXTURE_DOCUMENT`); the app does not invent facts for it. All sample names, values and confidence scores are synthetic, and confidence is not answer certainty. See the [fixture contract](docs/fixture-contract.md).
+
+### Inspect the demonstration
+
+On desktop, choose **Enable demo inspection** in the app header or press **?** outside editable fields. The optional frame explains the upload → question → evidence walkthrough. Hover a component or pin its **?** marker to read engineering context; pinned explanations support links and expandable details. The settings gear independently switches component explanations and the event log. Use **Disable demo inspection** or **?** to return to the normal workspace without resetting the current document, answer or source. On a primary touch device, the frame starts active; use settings to choose which layers to show.
+
+Upload the sample, ask a supported question, then select a citation. The log reports actual upload, question, source retrieval and PDF render outcomes, including rejection, failure and abandoned work. Retries create new attempts. Aborting a browser upload cannot guarantee that server-side persistence was undone; check the collection before retrying.
+
+Events are in-memory only: successful outcomes expire after 30 seconds, failures after 60 seconds and cancellations after 10 seconds, including while the layer is hidden. Entries can also be dismissed. Summaries omit filenames, document values, identifiers and credentials; there is no remote telemetry or persistent history. The package is pinned locally in `frontend/`—a global installation is not a build dependency. The layer is included in production builds; scenario-changing controls and build-time exclusion are not implemented.
 
 ### Stop, resume and troubleshoot
 
@@ -80,7 +91,7 @@ docker compose stop
 docker compose start
 ```
 
-Stop/start and `docker compose down` preserve the named data volumes. `down --volumes` deletes local data. The app's **Service status & developer details** disclosure exposes dependency health and API examples. If startup fails, check Docker, port conflicts and API logs. Readiness returns HTTP 503 during dependency failure; liveness remains available.
+Stop/start and `docker compose down` preserve the named data volumes. `down --volumes` deletes local data. The app's **Service status & developer details** disclosure exposes dependency health and a connection check; its inspection context contains API examples. If startup fails, check Docker, port conflicts and API logs. Readiness returns HTTP 503 during dependency failure; liveness remains available.
 
 Only loopback ports are published: web 3000, API 8000, S3 8333, and Keycloak 8080. This is a local demonstration with a development-mode identity provider, not a deployed production service. No cloud resources or CI deployment are included.
 

@@ -94,7 +94,7 @@ def test_collection_scale_filter_empty_failure_and_latest_request(runtime):
             page.unroute('**/api/documents?*')
             # Empty collection state is distinct from a filtered no-match state.
             page.route('**/api/documents?*',lambda route:route.fulfill(json={'documents':[],'total':0,'page':1,'page_size':10,'total_pages':0}))
-            search(page,'');expect(page.get_by_text('No documents yet. Upload a PDF to get started.',exact=True)).to_be_visible()
+            search(page,'');expect(page.get_by_text('No documents yet. Upload the demo invoice to get started.',exact=True)).to_be_visible()
             page.unroute('**/api/documents?*')
             search(page,marker+'-0000');expect(rows).to_have_count(1)
             page.route('**/api/documents/'+marker+'-0000',lambda route:held.append((route,route.fetch())))

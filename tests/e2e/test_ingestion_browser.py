@@ -3,7 +3,6 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 from conftest import demo_password
 import hashlib
-import uuid
 import io
 from datetime import datetime
 from pypdf import PdfWriter
@@ -43,9 +42,8 @@ def test_duplicate_filename_uploads_have_persistent_owner_scoped_metadata(runtim
         region = page.get_by_role('region', name='Your documents')
         uploaded = []
         for _ in range(2):
-            page.get_by_label('PDF document', exact=True).set_input_files(ROOT / 'fixtures/invoice/invoice.pdf')
             with page.expect_response(lambda response: response.url == WEB + '/api/documents' and response.request.method == 'POST') as response:
-                page.get_by_role('button', name='Upload PDF', exact=True).click()
+                page.get_by_role('button', name='Upload demo invoice', exact=True).click()
             result = response.value.json()
             assert response.value.status == 201 and result['state'] == 'ready'
             uploaded.append(result)
@@ -82,41 +80,43 @@ def test_real_login_upload_pending_refresh_logout_and_second_user(runtime):
         browser = p.chromium.launch()
         page = browser.new_page()
         sign_in(page, 'alice')
-        filename = f'browser-{uuid.uuid4()}.pdf'
-        page.get_by_label('PDF document', exact=True).set_input_files(
-            {'name': filename, 'mimeType': 'application/pdf', 'buffer': (ROOT / 'fixtures/invoice/invoice.pdf').read_bytes()})
-        expect(page.get_by_text('Selected: ' + filename)).to_be_visible()
+        expect(page.get_by_text('Supplied file: invoice.pdf',exact=True)).to_be_visible()
         # Hold the actual request, observe pending/duplicate prevention, then release to real API.
         pending = []
         page.route('**/api/documents', lambda route: pending.append(route) if route.request.method == 'POST' else route.continue_())
-        page.get_by_role('button', name='Upload PDF', exact=True).focus()
+        page.get_by_role('button', name='Upload demo invoice', exact=True).focus()
         page.keyboard.press('Enter')
         expect(page.get_by_role('button', name='Uploading…')).to_be_disabled()
         expect(page.get_by_text('Processing upload. Please wait.')).to_be_visible()
         page.wait_for_timeout(100)
         assert len(pending) == 1
-        pending[0].continue_()
+        with page.expect_response(lambda r:r.url.endswith('/api/documents') and r.request.method=='POST') as response:
+            pending[0].continue_()
+        document=response.value.json()['id']
         expect(page.get_by_role('region', name='Your documents').get_by_role('alert')).to_contain_text('Document ready', timeout=15000)
         page.unroute('**/api/documents')
-        expect(page.get_by_role('listitem').filter(has_text=filename)).to_contain_text('ready')
+        expect(page.get_by_role('listitem').filter(has_text=document)).to_contain_text('ready')
         page.reload()
-        expect(page.get_by_role('listitem').filter(has_text=filename)).to_be_visible()
-        page.get_by_label('PDF document', exact=True).set_input_files({'name': 'invalid.pdf', 'mimeType': 'application/pdf', 'buffer': b'not pdf'})
-        page.get_by_role('button', name='Upload PDF', exact=True).click()
+        expect(page.get_by_role('listitem').filter(has_text=document)).to_be_visible()
+        # Corrupt delivery of the public sample still exercises actual API rejection.
+        page.route('**/demo-invoice.pdf',lambda route:route.fulfill(content_type='application/pdf',body=b'not pdf'))
+        page.get_by_role('button', name='Upload demo invoice', exact=True).click()
         expect(page.get_by_role('region', name='Your documents').get_by_role('alert')).to_contain_text('INVALID_PDF')
         assert page.get_by_role('region', name='Your documents').get_by_role('alert').evaluate('el => getComputedStyle(el).display') != 'none'
+        page.unroute('**/demo-invoice.pdf')
         writer = PdfWriter()
         writer.add_blank_page(612, 792)
         unknown = io.BytesIO()
         writer.write(unknown)
-        unknown_name = f'unknown-{uuid.uuid4()}.pdf'
-        page.get_by_label('PDF document', exact=True).set_input_files(
-            {'name': unknown_name, 'mimeType': 'application/pdf', 'buffer': unknown.getvalue()})
-        page.get_by_role('button', name='Upload PDF', exact=True).click()
+        page.route('**/demo-invoice.pdf',lambda route:route.fulfill(content_type='application/pdf',body=unknown.getvalue()))
+        with page.expect_response(lambda r:r.url.endswith('/api/documents') and r.request.method=='POST') as response:
+            page.get_by_role('button', name='Upload demo invoice', exact=True).click()
+        unknown_id=response.value.json()['id']
         expect(page.get_by_role('region', name='Your documents').get_by_role('alert')).to_contain_text('Document failed: UNKNOWN_FIXTURE_DOCUMENT')
-        expect(page.get_by_role('listitem').filter(has_text=unknown_name)).to_contain_text('failed (UNKNOWN_FIXTURE_DOCUMENT)')
+        expect(page.get_by_role('listitem').filter(has_text=unknown_id)).to_contain_text('failed (UNKNOWN_FIXTURE_DOCUMENT)')
+        page.unroute('**/demo-invoice.pdf')
         page.reload()
-        expect(page.get_by_role('listitem').filter(has_text=unknown_name)).to_contain_text('failed (UNKNOWN_FIXTURE_DOCUMENT)')
+        expect(page.get_by_role('listitem').filter(has_text=unknown_id)).to_contain_text('failed (UNKNOWN_FIXTURE_DOCUMENT)')
         page.screenshot(path='test-results/ingestion-desktop.png', full_page=True)
         page.set_viewport_size({'width': 390, 'height': 844})
         assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
@@ -126,9 +126,9 @@ def test_real_login_upload_pending_refresh_logout_and_second_user(runtime):
         page.get_by_role('button', name='Logout', exact=True).click()
         page.wait_for_url(WEB + '/')
         expect(page.get_by_role('link', name='Sign in with Keycloak')).to_be_visible()
-        expect(page.get_by_text(filename, exact=True)).not_to_be_visible()
+        expect(page.get_by_role('listitem').filter(has_text=document)).to_have_count(0)
         sign_in(page, 'bob')
-        expect(page.get_by_role('listitem').filter(has_text=filename)).to_have_count(0)
+        expect(page.get_by_role('listitem').filter(has_text=document)).to_have_count(0)
         digest = hashlib.sha256(next(c['value'] for c in page.context.cookies() if c['name'] == 'hub_session').encode()).hexdigest()
         runtime('exec', '-T', 'api', 'python', '-c',
             f"from backend.database import database\nwith database() as db:\n db.execute('UPDATE sessions SET expires_at=0 WHERE id_hash=?',('{digest}',))")

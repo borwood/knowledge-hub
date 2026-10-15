@@ -1,10 +1,16 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import SourceViewer, {type Evidence} from './source-viewer';
+import { useEvents, useInspectable, type EventHandle } from '@borwood/demoable-react';
+import { eventLifetime } from './demo-events';
+import { explanations } from './demo-context';
 type Answer = {documentId:string; question:string; text:string; sourceKind:string; evidence:Evidence[]};
 type Document = {id:string; filename:string; state:string};
 const query = `query Answer($id: ID!, $question: InvoiceQuestion!) { invoiceAnswer(documentId:$id, question:$question) { documentId question text sourceKind evidence { fieldId entityId relationshipId fieldName value documentSha256 page blockId boundingBox { left top width height } method confidence confidenceKind } } }`;
 export default function Questions({document,csrf,onExpired}:{document:Document;csrf:string;onExpired:()=>void}) {
+  const events = useEvents();
+  const operation = useRef<EventHandle | null>(null);
+  const context = useInspectable<HTMLDivElement>({label: 'Traceable invoice questions', context: explanations.questions});
   const selected=document.id;
   const [question,setQuestion]=useState('INVOICE_TOTAL');
   const [answer,setAnswer]=useState<Answer|null>(null);
@@ -14,25 +20,29 @@ export default function Questions({document,csrf,onExpired}:{document:Document;c
   const generation=useRef(0);
   const abort=useRef<AbortController|null>(null);
   const busy=useRef(false);
-  function clear() { generation.current++; abort.current?.abort(); busy.current=false;setPending(false);setAnswer(null);setEvidence(null);setError(''); }
-  useEffect(()=>()=>{generation.current++;abort.current?.abort();},[]);
+  function clear() { operation.current?.cancel({content: 'Question superseded; its request was aborted and cannot replace the current answer.'}); generation.current++; abort.current?.abort(); busy.current=false;setPending(false);setAnswer(null);setEvidence(null);setError(''); }
+  useEffect(()=>()=>{generation.current++;abort.current?.abort();operation.current?.cancel({content: 'Question abandoned when the inquiry closed; its request was aborted.'});},[]);
   async function ask(event:React.FormEvent) {
     event.preventDefault(); if(!selected || busy.current) return;
     clear();busy.current=true;setPending(true);
+    const attempt = events.start({label: 'Ask invoice question', state: 'running', content: 'Retrieving supported invoice facts with their provenance through GraphQL.', lifetime: eventLifetime});
+    operation.current = attempt;
     const current=generation.current;
     const controller=new AbortController();abort.current=controller;
     try {
       const response=await fetch('/api/graphql',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify({query,variables:{id:selected,question}}),signal:controller.signal,cache:'no-store'});
       if(current!==generation.current)return;
-      if(response.status===401){onExpired();return;}
+      if(response.status===401){attempt.fail({content: 'Session expired; no answer was accepted.'});onExpired();return;}
       const result=await response.json();
       if(current!==generation.current)return;
       if(!response.ok || result.errors) throw new Error(result.errors?.[0]?.extensions?.code || result.error?.code || 'QUERY_UNAVAILABLE');
+      if (!result.data?.invoiceAnswer) throw new Error('QUERY_UNAVAILABLE');
       setAnswer(result.data.invoiceAnswer);
-    } catch(error){if(current===generation.current)setError(`${error instanceof Error ? error.message : 'QUERY_UNAVAILABLE'}: Unable to answer. Try again or select another ready invoice.`);}
+      attempt.complete({content: 'Supported facts returned with citations. Select evidence to inspect the retained original.'});
+    } catch(error){if(current===generation.current){attempt.fail({content: 'The service could not answer. HTTP, GraphQL and domain errors are failures; see the app for recovery.'});setError(`${error instanceof Error ? error.message : 'QUERY_UNAVAILABLE'}: Unable to answer. Try again or select another ready invoice.`);}}
     finally{if(current===generation.current){busy.current=false;setPending(false);}}
   }
-  return <section aria-label="Invoice questions" className="question-workspace"><div className="question-panel"><h3>Invoice questions</h3>
+  return <section aria-label="Invoice questions" className="question-workspace"><div ref={context.ref} className="question-panel"><h3>Invoice questions</h3>
     {document.state!=='ready'?<p>Questions require a ready document.</p>:<form onSubmit={ask}>
       <label htmlFor="question">Question</label><select id="question" value={question} onChange={e=>{clear();setQuestion(e.target.value);}}><option value="INVOICE_TOTAL">What is the invoice total and currency?</option><option value="INVOICE_VENDOR">Who issued this invoice?</option></select>
       <button className="primary" disabled={!selected||pending} type="submit">{pending?'Asking…':'Ask question'}</button>

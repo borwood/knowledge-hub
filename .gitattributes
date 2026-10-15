@@ -4,4 +4,5 @@
 *.yml text eol=lf
 .githooks/* text eol=lf
 fixtures/invoice/*.pdf -text
+frontend/public/*.pdf -text
 fixtures/invoice/*.json text eol=lf
